@@ -10,11 +10,14 @@ export default function TimerPage() {
   const [seconds, setSeconds] = useState(0);
   const [duration, setDuration] = useState(10);
   const [completedCount, setCompletedCount] = useState(0);
-  const [quote, setQuote] = useState<{ content: string; author: string } | null>(null);
+  const [quote, setQuote] = useState<{ q: string; a: string } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { theme, toggleTheme } = useContext(ThemeContext);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const savedName = localStorage.getItem("timer_name");
@@ -48,6 +51,7 @@ export default function TimerPage() {
             clearInterval(intervalRef.current!);
             setDone(true);
             setCompletedCount((c) => c + 1);
+
             if (audioRef.current) {
               audioRef.current.currentTime = 0;
               audioRef.current.play();
@@ -63,29 +67,24 @@ export default function TimerPage() {
     };
   }, [started, done, duration]);
 
-  useEffect(() => {
-    if (done) {
-      setQuote(null);
-      setQuoteLoading(true);
-      fetch("https://api.quotable.io/random")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data?.content && data?.author) {
-            setQuote({ content: data.content, author: data.author });
-          } else {
-            setQuote(null);
-          }
-        })
-        .catch(() => setQuote(null))
-        .finally(() => setQuoteLoading(false));
-    }
-  }, [done]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setName(input);
     setStarted(true);
     setDone(false);
+    setQuote(null);
+    setQuoteLoading(true);
+    fetch("/api/quote")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data[0]?.q && data[0]?.a) {
+          setQuote({ q: data[0].q, a: data[0].a });
+        } else {
+          setQuote(null);
+        }
+      })
+      .catch(() => setQuote(null))
+      .finally(() => setQuoteLoading(false));
   };
 
   const handleReset = () => {
@@ -110,6 +109,8 @@ export default function TimerPage() {
   };
 
   const progress = Math.min((seconds / duration) * 100, 100);
+
+  if (!mounted) return null;
 
   return (
     <div className={`min-h-screen flex flex-col items-center justify-center transition-all duration-500 ${theme === "dark" ? "bg-black text-white" : "bg-white text-black"}`}>
@@ -166,9 +167,10 @@ export default function TimerPage() {
             </div>
           )}
           {quote && !quoteLoading && (
-            <div className="max-w-md text-center mt-2 p-4 bg-yellow-50 border border-yellow-200 rounded shadow">
-              <div className="italic text-lg">“{quote.content}”</div>
-              <div className="mt-2 text-sm text-gray-700">— {quote.author}</div>
+            <div className="max-w-md text-center mt-2 p-4 bg-white text-black border border-gray-200 rounded shadow
+                          dark:bg-black dark:text-yellow-200 dark:border-yellow-900 transition-colors">
+              <div className="italic text-lg">“{quote.q}”</div>
+              <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">— {quote.a}</div>
             </div>
           )}
           <button onClick={handleTryAgain} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Попробовать ещё раз</button>
