@@ -10,13 +10,12 @@ export default function TimerPage() {
   const [seconds, setSeconds] = useState(0);
   const [duration, setDuration] = useState(10);
   const [completedCount, setCompletedCount] = useState(0);
-  const [quote, setQuote] = useState<{ q: string; a: string } | null>(null);
+  const [quote, setQuote] = useState<{ content: string; author: string } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { theme, toggleTheme } = useContext(ThemeContext);
 
-  // Load name and completedCount from localStorage
   useEffect(() => {
     const savedName = localStorage.getItem("timer_name");
     if (savedName) {
@@ -68,11 +67,11 @@ export default function TimerPage() {
     if (done) {
       setQuote(null);
       setQuoteLoading(true);
-      fetch("https://zenquotes.io/api/random")
+      fetch("https://api.quotable.io/random")
         .then((res) => res.json())
         .then((data) => {
-          if (Array.isArray(data) && data[0]?.q && data[0]?.a) {
-            setQuote({ q: data[0].q, a: data[0].a });
+          if (data?.content && data?.author) {
+            setQuote({ content: data.content, author: data.author });
           } else {
             setQuote(null);
           }
@@ -168,8 +167,8 @@ export default function TimerPage() {
           )}
           {quote && !quoteLoading && (
             <div className="max-w-md text-center mt-2 p-4 bg-yellow-50 border border-yellow-200 rounded shadow">
-              <div className="italic text-lg">“{quote.q}”</div>
-              <div className="mt-2 text-sm text-gray-700">— {quote.a}</div>
+              <div className="italic text-lg">“{quote.content}”</div>
+              <div className="mt-2 text-sm text-gray-700">— {quote.author}</div>
             </div>
           )}
           <button onClick={handleTryAgain} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Попробовать ещё раз</button>
